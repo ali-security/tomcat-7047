@@ -147,6 +147,37 @@ public class TestSSLHostConfig {
 
 
     @Test
+    public void testJsseCipherOrder() {
+        SSLHostConfig hc = new SSLHostConfig();
+        Cipher c1 = Cipher.TLS_AES_128_GCM_SHA256;  // TLS 1.3
+        Cipher c2 = Cipher.TLS_RSA_WITH_AES_128_CBC_SHA;  // TLS 1.2
+
+        // Configure both TLS 1.3 and TLS 1.2 ciphers
+        hc.setCipherSuites(c1.getOpenSSLAlias());
+        hc.setCiphers(c2.getOpenSSLAlias());
+
+        // Get the JSSE cipher names
+        List<String> jsseCipherNames = hc.getJsseCipherNames();
+
+        // Verify TLS 1.3 cipher appears before TLS 1.2 cipher
+        Assert.assertTrue(jsseCipherNames.size() >= 2);
+        int indexTls13 = -1;
+        int indexTls12 = -1;
+        for (int i = 0; i < jsseCipherNames.size(); i++) {
+            if (c1.getJsseNames().contains(jsseCipherNames.get(i))) {
+                indexTls13 = i;
+            }
+            if (c2.getJsseNames().contains(jsseCipherNames.get(i))) {
+                indexTls12 = i;
+            }
+        }
+        Assert.assertTrue("TLS 1.3 cipher not found", indexTls13 >= 0);
+        Assert.assertTrue("TLS 1.2 cipher not found", indexTls12 >= 0);
+        Assert.assertTrue("TLS 1.3 cipher should appear before TLS 1.2 cipher", indexTls13 < indexTls12);
+    }
+
+
+    @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
         // Dummy OpenSSL command name/value pair
         String name = "foo";
